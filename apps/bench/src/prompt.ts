@@ -14,6 +14,7 @@ RULES
 TOOLS
 - calculate: exact score of a play from the current hand, simulated on the real engine with the current jokers, levels and boss. Luck (Lucky Cards, probabilistic jokers) is sampled, so you get min/max. With no cards it ranks the best plays. Use it before committing to a close play. It is free.
 - act: run a list of actions in order. Cards and items are referenced by their #id from the state. The batch stops early after any action that reveals new information (playing, discarding, opening/picking from a pack, rerolling, using a consumable, choosing a blind), so put that action last. Safe to batch: several buys, sells, moves, then end_shop.
+- If an action fails, read the reason and change the action. Repeating it unchanged fails again. Three turns in a row without a successful action end the run.
 - act also takes "notes": your own memory, carried to the next turns. Keep it short: your plan, what build you are going for, what to look for in the shop.
 
 STRATEGY HINTS

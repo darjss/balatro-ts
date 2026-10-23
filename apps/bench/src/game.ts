@@ -127,20 +127,35 @@ export type StepResult =
   | { action: Action; ok: true }
   | { action: Action; ok: false; error: string };
 
-/** Runs actions in order. Stops at the first illegal one, and after any action that reveals new state. */
+/** The engine's messages are terse. These say what to do about them. */
+const HINTS: Record<string, string> = {
+  "no room": "joker or consumable slots are full, sell one first",
+  "can't take this card":
+    "it is used as you pick it and can't be used now: give it valid targets from your hand, or it needs a free slot (Judgement, Wraith, Ankh need a joker slot), or skip_pack",
+  "can't use it now":
+    "check its targets (hand card ids, right count) and that there is room for what it creates",
+  "can't afford it": "not enough money",
+};
+
+/**
+ * Runs actions in order. Stops at the first illegal one, after any action that reveals new state,
+ * and whenever the phase changes (buying a pack opens it, the last hand ends the round).
+ */
 export const runActions = (G: Game, actions: Action[]) => {
   const results: StepResult[] = [];
   for (const action of actions) {
+    const phase = phaseOf(G);
     try {
       apply(G, action);
       settle(G);
       results.push({ action, ok: true });
     } catch (e) {
       if (!(e instanceof IllegalAction)) throw e;
-      results.push({ action, ok: false, error: e.message });
+      const hint = HINTS[e.message];
+      results.push({ action, ok: false, error: hint ? `${e.message}: ${hint}` : e.message });
       break;
     }
-    if (REVEALING.has(action.type) || phaseOf(G) === "won" || phaseOf(G) === "lost") break;
+    if (REVEALING.has(action.type) || phaseOf(G) !== phase) break;
   }
   return { results, dropped: actions.length - results.length };
 };
@@ -207,5 +222,11 @@ export const bestPlays = (G: Game, n = 5): Play[] => {
         ),
       );
   candidates.sort((a, b) => b.score - a.score || a.cards.length - b.cards.length);
-  return candidates.slice(0, n).map((p) => scorePlay(G, p.cards));
+  // a Pair plus three kickers scores the same as the Pair alone, so keep one play per hand and score
+  const seen = new Set<string>();
+  const distinct = candidates.filter((p) => {
+    const k = `${p.hand}:${p.score}`;
+    return !seen.has(k) && seen.add(k);
+  });
+  return distinct.slice(0, n).map((p) => scorePlay(G, p.cards));
 };
