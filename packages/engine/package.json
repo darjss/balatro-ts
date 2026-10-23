@@ -1,0 +1,16 @@
+{
+  "name": "@balatro-ts/engine",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Seed-exact Balatro 1.0.1o engine, a TypeScript port of ArnoStar/BalatroEngine",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "tsgo --noEmit -p ."
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  }
+}
