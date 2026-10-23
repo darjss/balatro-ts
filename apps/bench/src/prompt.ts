@@ -20,7 +20,7 @@ STRATEGY HINTS
 - Early: buy cheap scoring jokers (+mult, +chips). Build towards one or two poker hands and level them with planets.
 - Money compounds through interest; do not spend down to $0 without a reason.
 - Late antes need xMult jokers; chip requirements grow fast (ante 8 base is 50,000 on White stake).
-- Check the boss before playing into it.`
+- Check the boss before playing into it.`;
 
 export const turnPrompt = (state: string, history: string[], notes: string, feedback: string) =>
   [
@@ -31,4 +31,4 @@ export const turnPrompt = (state: string, history: string[], notes: string, feed
     "Decide your next actions.",
   ]
     .filter(Boolean)
-    .join("\n\n")
+    .join("\n\n");

@@ -6,11 +6,11 @@ packages:
 catalogMode: prefer
 
 catalog:
-  '@ai-sdk/openai': ^4.0.99
-  '@ai-sdk/valibot': ^3.0.65
-  '@balatro-ts/engine': workspace:*
+  "@ai-sdk/openai": ^4.0.99
+  "@ai-sdk/valibot": ^3.0.65
+  "@balatro-ts/engine": workspace:*
   "@types/node": ^24
-  '@valibot/to-json-schema': ^1.8.0
+  "@valibot/to-json-schema": ^1.8.0
   ai: ^7.0.148
   typescript: ^7.0.2
   valibot: ^1.5.0

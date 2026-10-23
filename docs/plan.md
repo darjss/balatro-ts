@@ -6,13 +6,13 @@ directly with type stripping.
 
 ## Stack
 
-| Piece       | Choice                                          | Why                                                                                                   |
-| ----------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Toolchain   | Vite+ (`vp`), pnpm workspaces                   | `vp check --fix` formats, lints and typechecks                                                         |
+| Piece       | Choice                                          | Why                                                                                                     |
+| ----------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Toolchain   | Vite+ (`vp`), pnpm workspaces                   | `vp check --fix` formats, lints and typechecks                                                          |
 | Game engine | port of [ArnoStar/BalatroEngine][arno] (Python) | all 150 jokers, every deck, stake, tag, voucher and boss, and the game's own RNG, so seeds match 1.0.1o |
 | Agent loop  | `ai` 7 `generateText` with tools                | one stateless call per decision, tool loop inside it for `calculate`                                    |
-| Schemas     | valibot + `@ai-sdk/valibot`                     | one schema validates tool input and types the action union                                             |
-| Models      | cliproxy at `http://127.0.0.1:8317/v1`          | `gpt-6-astra`, `gpt-6.1-sol`, `gpt-6-luna` over the Responses API                                      |
+| Schemas     | valibot + `@ai-sdk/valibot`                     | one schema validates tool input and types the action union                                              |
+| Models      | cliproxy at `http://127.0.0.1:8317/v1`          | `gpt-6-astra`, `gpt-6.1-sol`, `gpt-6-luna` over the Responses API                                       |
 
 Effect was dropped. The engine is a synchronous state machine, an Effect loop costs 20 to 250x per
 step for nothing, and the harness is one `generateText` call in a loop.

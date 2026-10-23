@@ -4,18 +4,18 @@
 // operate on this object, mirroring how the Lua code uses the global `G`.
 // Ported from ArnoStar/BalatroEngine (balatro/game.py).
 
-import { ActionsMixin } from "./actions.ts";
+import type { ActionsMixin } from "./actions.ts";
 import { Back } from "./back.ts";
 import { Blind } from "./blind.ts";
 import { Card } from "./card.ts";
 import { CardArea } from "./cardarea.ts";
 import { load, type GameData } from "./data.ts";
-import { FlowMixin } from "./flow.ts";
+import type { FlowMixin } from "./flow.ts";
 import { copy_table, floor, type T } from "./lua.ts";
-import { PacksMixin } from "./packs.ts";
-import { PoolsMixin } from "./pools.ts";
+import type { PacksMixin } from "./packs.ts";
+import type { PoolsMixin } from "./pools.ts";
 import { PseudoRandom, normalize_seed } from "./rng.ts";
-import { ShopMixin } from "./shop.ts";
+import type { ShopMixin } from "./shop.ts";
 import { snapshot } from "./snapshot.ts";
 import type { Tag } from "./tag.ts";
 import { apply_to_run } from "./vouchers.ts";
@@ -467,7 +467,8 @@ export class Game {
     }
   }
 
-  playing_card_joker_effects(cards: Card[]) {
+  // the Lua passes {true} when the added cards don't matter, only their count
+  playing_card_joker_effects(cards: (Card | boolean)[]) {
     for (const j of [...this.jokers!.cards]) j.calculate_joker({ playing_card_added: true, cards });
   }
 
@@ -828,8 +829,6 @@ export class Game {
     return card;
   }
 }
-
-Object.assign(Game.prototype, PoolsMixin, FlowMixin, ShopMixin, PacksMixin, ActionsMixin);
 
 /**
  * `copy.deepcopy` with a pre-filled memo: class instances keep their

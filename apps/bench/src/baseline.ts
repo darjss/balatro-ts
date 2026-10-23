@@ -1,12 +1,12 @@
-import type { GameResult } from "./agent.ts"
-import { bestPlays, newGame, phaseOf, runActions, settle, type Action } from "./game.ts"
+import type { GameResult } from "./agent.ts";
+import { bestPlays, newGame, phaseOf, runActions, settle, type Action } from "./game.ts";
 
 /** No-LLM floor: always fight the blind, play the highest scoring hand, buy nothing. */
 export const greedy = (seed: string, rep = 0): GameResult => {
-  const started = Date.now()
-  const G = newGame(seed)
-  settle(G)
-  let turns = 0
+  const started = Date.now();
+  const G = newGame(seed);
+  settle(G);
+  let turns = 0;
   for (let phase = phaseOf(G); phase !== "won" && phase !== "lost"; phase = phaseOf(G)) {
     const action: Action =
       phase === "blind_select"
@@ -18,11 +18,11 @@ export const greedy = (seed: string, rep = 0): GameResult => {
             : phase === "pack"
               ? { type: "skip_pack" }
               : (() => {
-                  throw new Error(`engine stuck in state ${G.STATE}`)
-                })()
-    const { results } = runActions(G, [action])
-    if (!results[0]?.ok) throw new Error(`greedy action failed: ${JSON.stringify(results[0])}`)
-    turns++
+                  throw new Error(`engine stuck in state ${G.STATE}`);
+                })();
+    const { results } = runActions(G, [action]);
+    if (!results[0]?.ok) throw new Error(`greedy action failed: ${JSON.stringify(results[0])}`);
+    turns++;
   }
   return {
     model: "greedy",
@@ -38,5 +38,5 @@ export const greedy = (seed: string, rep = 0): GameResult => {
     reasoningTokens: 0,
     cachedTokens: 0,
     ms: Date.now() - started,
-  }
-}
+  };
+};

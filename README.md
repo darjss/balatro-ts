@@ -24,11 +24,11 @@ Joker, consumable, voucher, tag and boss text comes from
 [balatro-rs](https://github.com/evanofslack/balatro-rs) (MIT).
 
 ```ts
-import { Game } from "@balatro-ts/engine"
+import { Game } from "@balatro-ts/engine";
 
-const G = new Game("AAAAAAA", { deck: "b_red", stake: 1 }).start_run()
-G.do({ cmd: "select_blind" })
-G.do({ cmd: "play", cards: [0, 1, 2, 3, 4] })
+const G = new Game("AAAAAAA", { deck: "b_red", stake: 1 }).start_run();
+G.do({ cmd: "select_blind" });
+G.do({ cmd: "play", cards: [0, 1, 2, 3, 4] });
 ```
 
 See [docs/plan.md](docs/plan.md) for the harness design and [docs/porting.md](docs/porting.md) for

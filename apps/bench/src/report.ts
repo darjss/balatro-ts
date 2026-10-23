@@ -1,9 +1,9 @@
-import type { GameResult } from "./agent.ts"
+import type { GameResult } from "./agent.ts";
 
-const mean = (xs: number[]) => (xs.length > 0 ? xs.reduce((s, x) => s + x, 0) / xs.length : 0)
+const mean = (xs: number[]) => (xs.length > 0 ? xs.reduce((s, x) => s + x, 0) / xs.length : 0);
 
 export const summarize = (results: GameResult[]) => {
-  const byModel = Map.groupBy(results, (r) => r.model)
+  const byModel = Map.groupBy(results, (r) => r.model);
   return [...byModel].map(([model, rs]) => ({
     model,
     games: rs.length,
@@ -17,11 +17,11 @@ export const summarize = (results: GameResult[]) => {
     avgMinutes: mean(rs.map((r) => r.ms / 60000)),
     avgInputTokens: mean(rs.map((r) => r.inputTokens)),
     avgOutputTokens: mean(rs.map((r) => r.outputTokens)),
-  }))
-}
+  }));
+};
 
 export const printReport = (results: GameResult[]) => {
-  const rows = summarize(results).sort((a, b) => b.wins - a.wins || b.avgRound - a.avgRound)
+  const rows = summarize(results).sort((a, b) => b.wins - a.wins || b.avgRound - a.avgRound);
   console.table(
     rows.map((r) => ({
       model: r.model,
@@ -36,5 +36,5 @@ export const printReport = (results: GameResult[]) => {
       "avg in tok": Math.round(r.avgInputTokens),
       "avg out tok": Math.round(r.avgOutputTokens),
     })),
-  )
-}
+  );
+};
