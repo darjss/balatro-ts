@@ -26,7 +26,7 @@ Joker, consumable, voucher, tag and boss text comes from
 ```ts
 import { Game } from "@balatro-ts/engine"
 
-const G = new Game("AAAAAAA", "b_red", 1).start_run()
+const G = new Game("AAAAAAA", { deck: "b_red", stake: 1 }).start_run()
 G.do({ cmd: "select_blind" })
 G.do({ cmd: "play", cards: [0, 1, 2, 3, 4] })
 ```

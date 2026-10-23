@@ -1,7 +1,7 @@
 import { Game, IllegalAction, PseudoRandom, get_poker_hand_info, type Card, type CardArea } from "@balatro-ts/engine"
 import * as v from "valibot"
 
-export const newGame = (seed: string) => new Game(seed, "b_red", 1).start_run()
+export const newGame = (seed: string) => new Game(seed, { deck: "b_red", stake: 1 }).start_run()
 
 export type Phase = "blind_select" | "hand" | "shop" | "pack" | "won" | "lost" | "busy"
 

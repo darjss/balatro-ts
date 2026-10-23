@@ -39,7 +39,7 @@ apps/bench/
 
 ## How one game runs
 
-1. `new Game(seed, "b_red", 1).start_run()`.
+1. `new Game(seed, { deck: "b_red", stake: 1 }).start_run()`.
 2. Each turn renders the state and calls `generateText` with the rules as `instructions` and a
    prompt of the model's notes, the last 12 actions, the last failure and the state.
 3. The model may call `calculate` any number of times, then must call `act` once. The turn ends on

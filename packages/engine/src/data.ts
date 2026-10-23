@@ -39,7 +39,9 @@ export class GameData {
       for (const [k, v] of Object.entries(table)) v.key = k;
     // pools hold the prototype objects themselves, in the game's sort order
     const pools: Record<string, T[]> = {};
-    for (const [name, keys] of Object.entries<string[]>(d.center_pools)) {
+    // an empty Lua table exports as {}, which Python iterates as an empty list
+    for (const [name, pool] of Object.entries<string[] | T>(d.center_pools)) {
+      const keys = Array.isArray(pool) ? pool : Object.keys(pool);
       const src =
         name === "Tag"
           ? this.P_TAGS
