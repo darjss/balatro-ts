@@ -1,5 +1,6 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
 import { createOpenAI } from "@ai-sdk/openai";
 import { valibotSchema } from "@ai-sdk/valibot";
 import { generateText, hasToolCall, stepCountIs, tool, type LanguageModelUsage } from "ai";
@@ -50,6 +51,9 @@ export type GameResult = {
 };
 
 const MAX_ERRORS = 3;
+const QUOTA = /usage_limit|cooling down|rate.?limit|\b429\b/i;
+const QUOTA_WAIT = 60_000;
+const QUOTA_WAIT_MAX = 15 * 60_000;
 const HISTORY = 12;
 
 const brief = (r: StepResult) => {
@@ -78,6 +82,8 @@ export const playGame = async (o: GameOpts): Promise<GameResult> => {
   const history: string[] = [];
   let errors = 0;
   let turn = 0;
+  let quotaHits = 0;
+  let waited = 0;
   let end: End | undefined;
   let error: string | undefined;
 
@@ -160,8 +166,19 @@ export const playGame = async (o: GameOpts): Promise<GameResult> => {
       };
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
+      // Out of quota is the provider's problem, not the model's: wait it out and replay the turn.
+      if (!acted && QUOTA.test(error)) {
+        const wait = Math.min(QUOTA_WAIT_MAX, QUOTA_WAIT * 2 ** quotaHits++);
+        console.log(`${o.model}/${o.seed}/${o.rep}: quota, waiting ${wait / 60_000} min`);
+        await sleep(wait);
+        waited += wait;
+        turn--;
+        error = undefined;
+        continue;
+      }
       entry = { error };
     }
+    quotaHits = 0;
 
     const ok = acted?.results.some((r) => r.ok) ?? false;
     if (acted) {
@@ -198,7 +215,7 @@ export const playGame = async (o: GameOpts): Promise<GameResult> => {
     round: G.GAME.round,
     turns: turn,
     ...totals,
-    ms: Date.now() - started,
+    ms: Date.now() - started - waited,
     ...(error ? { error } : {}),
   };
 };

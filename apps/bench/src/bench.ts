@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { playGame, type GameOpts, type GameResult } from "./agent.ts";
 
@@ -38,6 +38,8 @@ export const runBench = async ({ name, models, seeds, reps, concurrency, ...game
   const worker = async () => {
     for (let t = queue.shift(); t; t = queue.shift()) {
       const runDir = join(dir, t.model, `${t.seed}-${t.rep}`);
+      // a game interrupted earlier starts over
+      rmSync(runDir, { recursive: true, force: true });
       const result = await playGame({ ...game, ...t, dir: runDir }).catch((e): GameResult => ({
         ...t,
         end: "aborted",
