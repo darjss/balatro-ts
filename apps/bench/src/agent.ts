@@ -5,6 +5,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { valibotSchema } from "@ai-sdk/valibot";
 import { generateText, hasToolCall, stepCountIs, tool, type LanguageModelUsage } from "ai";
 import * as v from "valibot";
+import type { Game } from "@balatro-ts/engine";
 import {
   Action,
   bestPlays,
@@ -20,7 +21,10 @@ import { render } from "./view.ts";
 
 export type Reasoning = "none" | "low" | "medium" | "high" | "xhigh";
 
+export type Mode = "turns" | "chat";
+
 export type GameOpts = {
+  mode: Mode;
   model: string;
   seed: string;
   rep: number;
@@ -50,32 +54,68 @@ export type GameResult = {
   error?: string;
 };
 
-const MAX_ERRORS = 3;
+export const MAX_ERRORS = 3;
 const QUOTA = /usage_limit|cooling down|rate.?limit|\b429\b/i;
 const QUOTA_WAIT = 60_000;
 const QUOTA_WAIT_MAX = 15 * 60_000;
 const HISTORY = 12;
 
-const brief = (r: StepResult) => {
+export const brief = (r: StepResult) => {
   const { type, ...rest } = r.action;
   const args = Object.keys(rest).length > 0 ? ` ${JSON.stringify(rest)}` : "";
   return `${type}${args}${r.ok ? "" : ` FAILED: ${r.error}`}`;
 };
 
-export const playGame = async (o: GameOpts): Promise<GameResult> => {
-  const provider = createOpenAI({ baseURL: o.baseURL, apiKey: o.apiKey });
-  const G = newGame(o.seed);
-  settle(G);
-  mkdirSync(o.dir, { recursive: true });
-  const logFile = join(o.dir, "turns.jsonl");
-  const started = Date.now();
+export const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+/** Out of quota is the provider's problem, not the model's. Returns the ms waited, or 0 if `error` is something else. */
+export const waitOutQuota = async (o: GameOpts, error: string, hits: number) => {
+  if (!QUOTA.test(error)) return 0;
+  const wait = Math.min(QUOTA_WAIT_MAX, QUOTA_WAIT * 2 ** hits);
+  console.log(`${o.model}/${o.seed}/${o.rep}: quota, waiting ${wait / 60_000} min`);
+  await sleep(wait);
+  return wait;
+};
+
+export const usageTotals = () => {
   const totals = { calls: 0, inputTokens: 0, outputTokens: 0, reasoningTokens: 0, cachedTokens: 0 };
-  const add = (u: LanguageModelUsage) => {
+  const add = (u: LanguageModelUsage, calls: number) => {
+    totals.calls += calls;
     totals.inputTokens += u.inputTokens ?? 0;
     totals.outputTokens += u.outputTokens ?? 0;
     totals.reasoningTokens += u.outputTokenDetails.reasoningTokens ?? 0;
     totals.cachedTokens += u.inputTokenDetails.cacheReadTokens ?? 0;
   };
+  return { totals, add };
+};
+
+export const openaiModel = (o: GameOpts) =>
+  createOpenAI({ baseURL: o.baseURL, apiKey: o.apiKey })(o.model);
+
+export const calculateTool = (G: Game) =>
+  tool({
+    description:
+      "Exact score of playing the given hand cards now, simulated on the game engine. Omit cards to get the top 5 plays from the current hand. Only works while selecting a hand.",
+    inputSchema: valibotSchema(
+      v.object({ cards: v.optional(v.array(v.pipe(v.number(), v.integer()))) }),
+    ),
+    execute: async ({ cards }) => {
+      if (phaseOf(G) !== "hand") return { error: "calculate only works while selecting a hand" };
+      try {
+        return cards && cards.length > 0 ? scorePlay(G, cards) : { best: bestPlays(G) };
+      } catch (e) {
+        return { error: errorMessage(e) };
+      }
+    },
+  });
+
+export const playGame = async (o: GameOpts, model = openaiModel(o)): Promise<GameResult> => {
+  const G = newGame(o.seed);
+  settle(G);
+  mkdirSync(o.dir, { recursive: true });
+  const logFile = join(o.dir, "turns.jsonl");
+  const started = Date.now();
+  const { totals, add } = usageTotals();
 
   let notes = "";
   let feedback = "";
@@ -104,22 +144,7 @@ export const playGame = async (o: GameOpts): Promise<GameResult> => {
     const t0 = Date.now();
 
     const tools = {
-      calculate: tool({
-        description:
-          "Exact score of playing the given hand cards now, simulated on the game engine. Omit cards to get the top 5 plays from the current hand. Only works while selecting a hand.",
-        inputSchema: valibotSchema(
-          v.object({ cards: v.optional(v.array(v.pipe(v.number(), v.integer()))) }),
-        ),
-        execute: async ({ cards }) => {
-          if (phaseOf(G) !== "hand")
-            return { error: "calculate only works while selecting a hand" };
-          try {
-            return cards && cards.length > 0 ? scorePlay(G, cards) : { best: bestPlays(G) };
-          } catch (e) {
-            return { error: e instanceof Error ? e.message : String(e) };
-          }
-        },
-      }),
+      calculate: calculateTool(G),
       act: tool({
         description:
           "Run actions in order. Stops after the first failure, and after any action that reveals new information. Optionally replace your notes.",
@@ -141,7 +166,7 @@ export const playGame = async (o: GameOpts): Promise<GameResult> => {
     let entry: Record<string, unknown>;
     try {
       const res = await generateText({
-        model: provider(o.model),
+        model,
         instructions: SYSTEM,
         prompt: turnPrompt(state, history, notes, feedback),
         tools,
@@ -154,8 +179,7 @@ export const playGame = async (o: GameOpts): Promise<GameResult> => {
         maxRetries: 3,
         timeout: 600_000,
       });
-      totals.calls += res.steps.length;
-      add(res.totalUsage);
+      add(res.totalUsage, res.steps.length);
       entry = {
         steps: res.steps.map((s) => ({
           calls: s.toolCalls.map((c) => ({ tool: c.toolName, input: c.input })),
@@ -165,12 +189,11 @@ export const playGame = async (o: GameOpts): Promise<GameResult> => {
         usage: res.totalUsage,
       };
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
-      // Out of quota is the provider's problem, not the model's: wait it out and replay the turn.
-      if (!acted && QUOTA.test(error)) {
-        const wait = Math.min(QUOTA_WAIT_MAX, QUOTA_WAIT * 2 ** quotaHits++);
-        console.log(`${o.model}/${o.seed}/${o.rep}: quota, waiting ${wait / 60_000} min`);
-        await sleep(wait);
+      error = errorMessage(e);
+      const wait = acted ? 0 : await waitOutQuota(o, error, quotaHits);
+      if (wait > 0) {
+        // replay the same turn
+        quotaHits++;
         waited += wait;
         turn--;
         error = undefined;

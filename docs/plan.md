@@ -51,6 +51,14 @@ apps/bench/
 
 Every turn is a fresh prompt, so context never grows and every model sees the same input.
 
+`--mode chat` (`src/chat.ts`) runs one conversation per game instead. `act` returns the results
+and the new state, and the model keeps calling tools. When an ante ends, or the context passes
+80k tokens, the model writes a summary and the conversation restarts from that summary and the
+current state. A failed request is followed by a message with the real current state, so the
+conversation never drifts from the game. Use it to A/B memory against the stateless default.
+A provider quota error pauses the game in either mode and retries the same step, waiting 1 minute
+and doubling up to 15.
+
 ## Calculator
 
 `calculate({ cards })` clones the game, swaps the clone's RNG for a fresh seed and plays the cards

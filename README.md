@@ -6,12 +6,14 @@ A headless, seed-exact Balatro engine in TypeScript, and a harness that benchmar
 vp install
 cd apps/bench
 node src/cli.ts baseline                       # greedy bot, no LLM, a few seconds
-node src/cli.ts bench --name first --reps 3    # 3 models x 5 seeds x 3 through cliproxy
+node src/cli.ts bench --name first --reps 3    # sol and luna x 5 seeds x 3 through cliproxy
 node src/cli.ts report first
 ```
 
-Options: `--models`, `--seeds`, `--reps`, `--concurrency`, `--reasoning`, `--max-turns`,
-`--base-url`. The API key comes from `BALATRO_API_KEY`.
+Options: `--mode turns|chat`, `--models`, `--seeds`, `--reps`, `--concurrency`, `--reasoning`,
+`--max-turns`, `--base-url`. The API key comes from `BALATRO_API_KEY`. `turns` (default) sends a
+fresh prompt every decision. `chat` keeps one conversation per game and compacts it after each
+ante.
 
 ## Engine
 

@@ -1,6 +1,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { playGame, type GameOpts, type GameResult } from "./agent.ts";
+import { playChat } from "./chat.ts";
 
 export type BenchOpts = Omit<GameOpts, "model" | "seed" | "rep" | "dir"> & {
   name: string;
@@ -40,7 +41,8 @@ export const runBench = async ({ name, models, seeds, reps, concurrency, ...game
       const runDir = join(dir, t.model, `${t.seed}-${t.rep}`);
       // a game interrupted earlier starts over
       rmSync(runDir, { recursive: true, force: true });
-      const result = await playGame({ ...game, ...t, dir: runDir }).catch((e): GameResult => ({
+      const play = game.mode === "chat" ? playChat : playGame;
+      const result = await play({ ...game, ...t, dir: runDir }).catch((e): GameResult => ({
         ...t,
         end: "aborted",
         ante: 0,

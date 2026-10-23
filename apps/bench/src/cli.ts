@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
-import type { Reasoning } from "./agent.ts";
+import type { Mode, Reasoning } from "./agent.ts";
 import { greedy } from "./baseline.ts";
 import { readResults, runBench } from "./bench.ts";
 import { printReport } from "./report.ts";
@@ -11,7 +11,8 @@ const { positionals, values } = parseArgs({
   allowPositionals: true,
   options: {
     name: { type: "string", default: "bench" },
-    models: { type: "string", default: "gpt-6-astra,gpt-6.1-sol,gpt-6-luna" },
+    mode: { type: "string", default: "turns" },
+    models: { type: "string", default: "gpt-6.1-sol,gpt-6-luna" },
     seeds: { type: "string", default: "AAAAAAA,BBBBBBB,CCCCCCC,DDDDDDD,EEEEEEE" },
     reps: { type: "string", default: "3" },
     concurrency: { type: "string", default: "6" },
@@ -31,6 +32,7 @@ const list = (s: string) =>
     .filter(Boolean);
 const REASONING = ["none", "low", "medium", "high", "xhigh"] as const;
 const isReasoning = (s: string): s is Reasoning => REASONING.some((r) => r === s);
+const isMode = (s: string): s is Mode => s === "turns" || s === "chat";
 
 const apiKey = () =>
   process.env.BALATRO_API_KEY ??
@@ -42,7 +44,9 @@ switch (positionals[0]) {
   case "bench": {
     if (!isReasoning(values.reasoning))
       throw new Error(`--reasoning must be one of ${REASONING.join(", ")}`);
+    if (!isMode(values.mode)) throw new Error("--mode must be turns or chat");
     await runBench({
+      mode: values.mode,
       name: values.name,
       models: list(values.models),
       seeds: list(values.seeds),
