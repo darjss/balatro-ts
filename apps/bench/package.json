@@ -1,0 +1,22 @@
+{
+  "name": "@balatro-ts/bench",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bench": "node src/cli.ts bench",
+    "baseline": "node src/cli.ts baseline",
+    "report": "node src/cli.ts report"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "catalog:",
+    "@ai-sdk/valibot": "catalog:",
+    "@balatro-ts/engine": "catalog:",
+    "@valibot/to-json-schema": "catalog:",
+    "ai": "catalog:",
+    "valibot": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  }
+}
